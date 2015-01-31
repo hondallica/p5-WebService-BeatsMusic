@@ -1,5 +1,5 @@
 requires 'perl', '5.008001';
-requires 'JSON::XS';
+requires 'JSON';
 requires 'Cache::LRU';
 requires 'Net::DNS::Lite';
 requires 'Furl';
@@ -11,5 +11,8 @@ requires 'namespace::clean';
 
 on 'test' => sub {
     requires 'Test::More', '0.98';
+    requires 'Test::Flatten';
+    requires 'Test::HTTP::Server';
+    requires 'File::Slurp';
 };
 

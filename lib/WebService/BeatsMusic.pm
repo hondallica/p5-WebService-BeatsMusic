@@ -1,5 +1,5 @@
 package WebService::BeatsMusic;
-use JSON::XS;
+use JSON;
 use Cache::LRU;
 use Net::DNS::Lite;
 use Furl;
@@ -11,86 +11,50 @@ use namespace::clean;
 our $VERSION = "0.01";
 
 
-$Net::DNS::Lite::CACHE = Cache::LRU->new( size => 512 );
+$Net::DNS::Lite::CACHE = Cache::LRU->new( size => 5 );
+
+my $http = Furl::HTTP->new(
+    inet_aton => \&Net::DNS::Lite::inet_aton,
+    agent => "WebService::BeatsMusic/$VERSION",
+    headers => [ 'Accept-Encoding' => 'gzip',],
+);
 
 has 'api_key' => (
     is => 'rw',
     isa => sub { $_[0] },
     required => 1,
-    default => sub { $ENV{BEATSMUSIC_API_KEY} },
+    default => sub { $ENV{BEATSMUSIC_API_KEY} || '' },
 );
 
-has 'http' => (
+has 'url' => (
     is => 'rw',
+    isa => sub { $_[0] },
     required => 1,
-    default  => sub {
-        my $http = Furl::HTTP->new(
-            inet_aton => \&Net::DNS::Lite::inet_aton,
-            agent => 'WebService::BeatsMusic/' . $VERSION,
-            headers => [ 'Accept-Encoding' => 'gzip',],
-        );
-        return $http;
-    },
+    default => sub { 'https://partner.api.beatsmusic.com' },
 );
 
-
-my @methods = (
-    'chart.artists.get',
-    'chart.tracks.get',
-    'track.search',
-    'track.get',
-    'track.subtitle.get',
-    'track.lyrics.get',
-    'track.snippet.get',
-    'track.lyrics.post',
-    'track.lyrics.feedback.post',
-    'matcher.lyrics.get',
-    'matcher.track.get',
-    'matcher.subtitle.get',
-    'artist.get',
-    'artist.search',
-    'artist.albums.get',
-    'artist.related.get',
-    'album.get',
-    'album.tracks.get',
-    'tracking.url.get',
-    'catalogue.dump.get',
+has 'http_request_method' => (
+    is => 'rw',
+    isa => sub { $_[0] },
+    required => 1,
+    default => sub { 'GET' },
 );
-
-
-for my $method (@methods) {
-    my $code = sub {
-        my ($self, %query_param) = @_;
-        return $self->request($method, \%query_param);
-    };
-    no strict 'refs';
-    my $method_name = $method;
-    $method_name =~ s|\.|_|g;
-    *{$method_name} = $code; 
-}
-
 
 sub request {
-    my ( $self, $path, $query_param ) = @_;
+    my ( $self, $path, $query ) = @_;
 
-    my $query = URI->new;
-    $query->query_param( 'client_id', $self->api_key );
-    map { $query->query_param( $_, $query_param->{$_} ) } keys %$query_param;
+    $query->{client_id} = $self->api_key;
 
-    my ($minor_version, $status_code, $message, $headers, $content) = 
-        $self->http->request(
-            scheme => 'https',
-            host => 'partner.api.beatsmusic.com',
-            path_query => "v1/api/$path$query",
-            method => 'GET',
-        );
+    my $url = new URI($self->url);
+    $url->path("v1/api/$path");
+    $url->query_form($query);
 
-    my $data = decode_json( $content );
-    if ( $data->{message}{header}{status_code} != 200 ) {
-        confess $data->{message}{header}{status_code};
-    } else {
-        return $data;
-    }
+    my (undef, $code, $msg, $headers, $content) = 
+        $http->request(method => $self->http_request_method, url => $url);
+
+    confess "$code $msg $url" if $code != 200;
+
+    return decode_json( $content );
 }
 
 
@@ -102,15 +66,26 @@ __END__
 
 =head1 NAME
 
-WebService::BeatsMusic - It's new $module
+WebService::BeatsMusic - A simple and fast interface to the BeatsMusic API
 
 =head1 SYNOPSIS
 
     use WebService::BeatsMusic;
 
+    my $bm = new WebService::BeatsMusic(api_key => 'YOUR_API_KEY');
+    my $data = $bm->request('activities');
+
 =head1 DESCRIPTION
 
-WebService::BeatsMusic is ...
+The module provides a simple interface to the BeatsMusic API. To use this module, you must first sign up at L<https://developer.beatsmusic.com/page> to receive an API key.
+
+=head1 METHODS
+
+These methods usage: L<https://developer.beatsmusic.com/docs>
+
+=head1 SEE ALSO
+
+L<https://developer.beatsmusic.com/page>
 
 =head1 LICENSE
 

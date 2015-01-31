@@ -1,5 +1,5 @@
 {
-   "abstract" : "It's new $module",
+   "abstract" : "A simple and fast interface to the BeatsMusic API",
    "author" : [
       "Hondallica <hondallica@gmail.com>"
    ],
@@ -45,7 +45,7 @@
             "Cache::LRU" : "0",
             "Carp" : "0",
             "Furl" : "0",
-            "JSON::XS" : "0",
+            "JSON" : "0",
             "Moo" : "0",
             "Net::DNS::Lite" : "0",
             "URI" : "0",
@@ -56,6 +56,9 @@
       },
       "test" : {
          "requires" : {
+            "File::Slurp" : "0",
+            "Test::Flatten" : "0",
+            "Test::HTTP::Server" : "0",
             "Test::More" : "0.98"
          }
       }
