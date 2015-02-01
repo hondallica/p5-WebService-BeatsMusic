@@ -15,7 +15,7 @@ my $bm = new WebService::BeatsMusic(url => $server->uri);
 
 subtest 'Collection' => sub {
 
-    my $res = $bm->request('artists', { limit => 3, order_by => 'popularity' });
+    my $res = $bm->request('artists', { limit => 3, order_by => 'popularity', ids => 'ar42844' });
     ok $res;
     is ref $res, 'HASH';
 
